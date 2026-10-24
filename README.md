@@ -4,7 +4,7 @@
 
 A Home Assistant card with the current moon phase, a few outdoor readings, and small drawings that show up when the weather or the calendar matches.
 
-**This card was designed and written by Grok in Cursor.** The person who published this repository asked for the card and is sharing it. They did not design it.
+**This card was designed by wjstuben and written by Ai in Cursor.** 
 
 The forecast stays on Home Assistant's own forecast card. This card does not draw one.
 
