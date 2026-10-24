@@ -2,7 +2,7 @@
 
 ![Lunar Weather Card](images/card.png)
 
-A Home Assistant card with the current moon phase, a few outdoor readings, and small drawings that show up when the weather or the calendar matches.
+A Home Assistant card with the current weather by day, the moon phase at night, a few outdoor readings, and small drawings that show up when the weather or the calendar matches.
 
 **This card was designed by wjstuben and written by Ai in Cursor.** 
 
@@ -35,7 +35,11 @@ Reload the dashboard after adding the resource.
 
 ## What shows up
 
-The moon phase is calculated in the card for the northern hemisphere. A full moon uses its traditional name. A handful of known blood-moon dates turn the moon red. Clouds follow the weather entity.
+While the sun is up, the picture is the weather: sun, clouds, rain, snow, fog, hail, wind, or a storm. The caption matches that picture. After dark, if the moon is above the horizon, the picture switches to the moon phase. On a night when the moon has already set, the picture stays the weather, on a dark sky.
+
+The moon phase is calculated in the card for the northern hemisphere, from the Home Assistant location. A full moon uses its traditional name. A handful of known blood-moon dates turn the moon red. If the location is missing, nights show the moon.
+
+Rain, snow, lightning, frost, and the holiday drawings stay up whenever their condition matches, including during the day. They sit around the weather picture the same way they sit around the moon.
 
 Drawings stay out of the way of the readings.
 
@@ -44,9 +48,9 @@ Drawings stay out of the way of the readings.
 - Rain: boots, a leaning umbrella, drops, and a splash.
 - Snow: corner drifts and falling flakes.
 - Thunderstorm: a small storm cloud and a few lightning bolts. A rainy storm keeps the rain drawings too.
-- Strong gusts: leaves. A hot day: sunglasses on the moon. A warm summer evening: fireflies.
+- Strong gusts: leaves. A hot day: sunglasses on the sun, or on the moon after dark. A warm summer evening: fireflies.
 - Clear meteor-shower nights: shooting stars.
-- Sun up after rain the same day: a small rainbow on the moon.
+- Sun up after rain the same day: a small rainbow.
 - Calendar days: Halloween, Christmas, New Year, Valentine's Day, Easter, Pi Day (the moon is a pie), St Patrick's Day, Earth Day (the moon is the Earth), Cinco de Mayo, Independence Day, Groundhog Day, Friday the 13th, and Thanksgiving.
 
 Animations pause when the browser asks for reduced motion.

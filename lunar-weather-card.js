@@ -12,9 +12,11 @@
 // Optional holiday: auto (default), none, halloween, christmas, easter, valentine, newyear, patrick, thanksgiving, groundhog, cinco
 // Icicles when the reading is below 32°F (0°C).
 // Frost crystals when the day is above freezing and the coming night drops to it, and when the reading is below 0°F (-18°C).
-// Thunderstorms add a storm cloud and flashing bolts over the moon.
+// Thunderstorms add a storm cloud and flashing bolts over the picture, day or night.
 // Clear meteor-shower nights get shooting stars. Strong gusts blow leaves.
-// Hot days put sunglasses on the moon. Warm summer evenings get fireflies.
+// During the day the picture is the weather. The moon phase shows at night,
+// when the moon is above the horizon.
+// Hot days put sunglasses on the sun. Warm summer evenings get fireflies.
 // July 4 has fireworks. Blood moons turn the moon red.
 // A rainbow shows when the sun is out and the station has rain today.
 // Snow adds corner drifts and falling flakes.
@@ -231,6 +233,135 @@ function moonGraphic(phase, cover, tone) {
     <path d="${lit}" fill="url(#lit)"/>
     <circle cx="${cx}" cy="${cy}" r="${r - 0.4}" fill="none" stroke="${palette.rim}" stroke-width="1.4"/>
     ${moonClouds(cover)}
+  </svg>`;
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+}
+
+const OBLIQUITY = (Math.PI / 180) * 23.4397;
+
+function moonAltitude(date, lat, lng) {
+  const rad = Math.PI / 180;
+  const days = date.valueOf() / 86400000 - 0.5 + 2440588 - 2451545;
+  const lw = rad * -lng;
+  const phi = rad * lat;
+  const L = rad * (218.316 + 13.176396 * days);
+  const M = rad * (134.963 + 13.064993 * days);
+  const F = rad * (93.272 + 13.229350 * days);
+  const l = L + rad * 6.289 * Math.sin(M);
+  const b = rad * 5.128 * Math.sin(F);
+  const ra = Math.atan2(Math.sin(l) * Math.cos(OBLIQUITY) - Math.tan(b) * Math.sin(OBLIQUITY), Math.cos(l));
+  const dec = Math.asin(Math.sin(b) * Math.cos(OBLIQUITY) + Math.cos(b) * Math.sin(OBLIQUITY) * Math.sin(l));
+  const hour = rad * (280.16 + 360.9856235 * days) - lw - ra;
+  const alt = Math.asin(Math.sin(phi) * Math.sin(dec) + Math.cos(phi) * Math.cos(dec) * Math.cos(hour));
+  return alt / rad;
+}
+
+function moonIsUp(date, hass) {
+  const lat = Number(hass?.config?.latitude);
+  const lng = Number(hass?.config?.longitude);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return true;
+  return moonAltitude(date, lat, lng) > 0;
+}
+
+const WEATHER_NAMES = {
+  "clear-night": "Clear",
+  cloudy: "Cloudy",
+  exceptional: "Unusual",
+  fog: "Fog",
+  hail: "Hail",
+  lightning: "Storm",
+  "lightning-rainy": "Thunderstorm",
+  partlycloudy: "Partly cloudy",
+  pouring: "Pouring",
+  rainy: "Rain",
+  snowy: "Snow",
+  "snowy-rainy": "Wintry mix",
+  sunny: "Sunny",
+  windy: "Windy",
+  "windy-variant": "Partly cloudy",
+};
+
+function weatherLabel(state) {
+  const key = String(state || "").toLowerCase();
+  return WEATHER_NAMES[key] || "Weather";
+}
+
+function weatherGraphic(condition, night) {
+  const key = String(condition || "sunny").toLowerCase();
+  const sky0 = night ? "#2c3b72" : "#8ec8ff";
+  const sky1 = night ? "#14182e" : "#3c7ed0";
+  const stars = night
+    ? [[22, 28, 1.3], [104, 22, 1.1], [110, 70, 1.4], [18, 78, 1], [90, 16, 0.9]]
+        .map(([x, y, rad], i) => `<circle cx="${x}" cy="${y}" r="${rad}" fill="${["#ffe7a8", "#fff", "#9ec0ff", "#ffd0e8", "#fff4c8"][i]}"/>`)
+        .join("")
+    : "";
+  const rays = [0, 45, 90, 135, 180, 225, 270, 315]
+    .map((deg) => {
+      const a = (deg * Math.PI) / 180;
+      const x1 = (64 + Math.cos(a) * 40).toFixed(1);
+      const y1 = (58 + Math.sin(a) * 40).toFixed(1);
+      const x2 = (64 + Math.cos(a) * 50).toFixed(1);
+      const y2 = (58 + Math.sin(a) * 50).toFixed(1);
+      return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#ffd56a" stroke-width="3.2" stroke-linecap="round"/>`;
+    })
+    .join("");
+  const sun = `${rays}<circle cx="64" cy="58" r="32" fill="url(#sun)"/><circle cx="64" cy="58" r="31.4" fill="none" stroke="rgba(255,220,140,.9)" stroke-width="1.4"/>`;
+  const puff = (x, y, s) => `
+    <g transform="translate(${x} ${y}) scale(${s})" opacity="0.96">
+      <ellipse cx="0" cy="8" rx="22" ry="12" fill="url(#cloud)"/>
+      <ellipse cx="-16" cy="10" rx="14" ry="9" fill="#d5e2ff"/>
+      <ellipse cx="16" cy="9" rx="15" ry="10" fill="#f3f7ff"/>
+      <ellipse cx="-1" cy="2" rx="13" ry="9" fill="#fff"/>
+    </g>`;
+  const rain = (n) =>
+    Array.from({ length: n }, (_, i) => {
+      const x = 34 + (i % 5) * 14;
+      const y = 78 + Math.floor(i / 5) * 10;
+      return `<line x1="${x}" y1="${y}" x2="${x - 4}" y2="${y + 10}" stroke="#7eb6ff" stroke-width="2.2" stroke-linecap="round"/>`;
+    }).join("");
+  const flakes = [[40, 86], [56, 96], [72, 84], [88, 98], [48, 108], [80, 110]]
+    .map(([x, y]) => `<circle cx="${x}" cy="${y}" r="2.4" fill="#fff"/>`)
+    .join("");
+  const hail = [[42, 88], [58, 98], [74, 86], [90, 100], [50, 110]]
+    .map(([x, y]) => `<circle cx="${x}" cy="${y}" r="3.4" fill="#f4f8ff" stroke="#9db4de" stroke-width="1"/>`)
+    .join("");
+  const bolt = `<polygon points="74,36 58,66 68,66 52,98 86,58 74,58 88,36" fill="#ffe56a"/>`;
+  const wind = `<path d="M16 44 H74" stroke="#d7e7ff" stroke-width="3" stroke-linecap="round" fill="none"/><path d="M28 56 H92" stroke="#eef4ff" stroke-width="3" stroke-linecap="round" fill="none"/><path d="M20 68 H64" stroke="#d7e7ff" stroke-width="3" stroke-linecap="round" fill="none"/>`;
+  const fog = [48, 60, 72].map((y) => `<rect x="22" y="${y}" width="84" height="8" rx="4" fill="#e7eefc" opacity="0.88"/>`).join("");
+  const showSun = !night && ["sunny", "windy", "partlycloudy", "windy-variant", "exceptional"].includes(key);
+  let body = stars;
+  if (showSun) body += sun;
+  if (key === "windy" || key === "windy-variant") body += wind;
+  if (key === "partlycloudy" || key === "windy-variant") body += puff(86, 74, 1.05);
+  if (key === "cloudy") body += puff(46, 62, 1.2) + puff(84, 50, 0.95);
+  if (key === "fog") body += fog;
+  if (["rainy", "pouring", "snowy-rainy", "hail"].includes(key)) body += puff(64, 50, 1.2);
+  if (key === "snowy") body += puff(64, 50, 1.15) + flakes;
+  if (key === "rainy" || key === "snowy-rainy") body += rain(6);
+  if (key === "pouring") body += rain(10);
+  if (key === "lightning" || key === "lightning-rainy") body += puff(64, 48, 1.25) + (key === "lightning-rainy" ? rain(8) : "") + bolt;
+  if (key === "snowy-rainy") body += flakes;
+  if (key === "hail") body += hail;
+  if (!showSun && body === stars && key !== "clear-night") body += night ? puff(64, 58, 1.1) : sun;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+    <defs>
+      <radialGradient id="sky" cx="50%" cy="46%" r="58%">
+        <stop offset="0%" stop-color="${sky0}"/>
+        <stop offset="72%" stop-color="${sky1}"/>
+        <stop offset="100%" stop-color="${sky1}" stop-opacity="0"/>
+      </radialGradient>
+      <radialGradient id="sun" cx="38%" cy="34%" r="70%">
+        <stop offset="0%" stop-color="#fff6d0"/>
+        <stop offset="55%" stop-color="#ffd15a"/>
+        <stop offset="100%" stop-color="#f0a030"/>
+      </radialGradient>
+      <linearGradient id="cloud" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#f7f9ff"/>
+        <stop offset="100%" stop-color="#c5d4f4"/>
+      </linearGradient>
+    </defs>
+    <circle cx="64" cy="58" r="54" fill="url(#sky)"/>
+    ${body}
   </svg>`;
   return `data:image/svg+xml,${encodeURIComponent(svg)}`;
 }
@@ -522,7 +653,6 @@ class LunarWeatherCard extends LitElement {
     const earth = today.getMonth() === 3 && today.getDate() === 22;
     const friday = today.getDate() === 13 && today.getDay() === 5;
     const cover = cloudCover(stateObj);
-    const icon = moonGraphic(phase, cover, holiday === "halloween" ? "halloween" : name === "Blood Moon" ? "blood" : pie ? "pie" : earth ? "earth" : "");
     const temp = this._num("temp", stateObj.attributes.temperature);
     const unit = this.hass.config.unit_system.temperature || "";
     const shown = unit === "°F" ? Math.round(temp) : temp;
@@ -553,6 +683,25 @@ class LunarWeatherCard extends LitElement {
     const july4 = today.getMonth() === 6 && today.getDate() === 4;
     const rainbow = showRainbow(sunState, rain, wet) && holiday !== "patrick";
     const frost = frostDue(this._hours, this._days, unit, today, shown) || subzero;
+    const night = sunState === "below_horizon";
+    const lunar = night && moonIsUp(today, this.hass);
+    const condition = stateObj.state;
+    const sunnyFace = ["sunny", "windy", "partlycloudy", "windy-variant", "exceptional"].includes(String(condition || "").toLowerCase());
+    let icon;
+    let caption = name;
+    if (pie) {
+      icon = moonGraphic(phase, cover, "pie");
+      caption = "Pi Day";
+    } else if (earth) {
+      icon = moonGraphic(phase, cover, "earth");
+      caption = "Earth Day";
+    } else if (lunar) {
+      icon = moonGraphic(phase, cover, holiday === "halloween" ? "halloween" : name === "Blood Moon" ? "blood" : "");
+    } else {
+      icon = weatherGraphic(condition, night);
+      caption = weatherLabel(condition);
+    }
+    const shades = hot && (lunar || (!night && sunnyFace)) && !pie && !earth;
 
     return html`
       <ha-card class="${holiday}" @click="${this._open}">
@@ -571,8 +720,8 @@ class LunarWeatherCard extends LitElement {
         ${friday && holiday !== "cinco" ? html`<span class="omen" aria-hidden="true">${catSvg}</span>` : ""}
         ${holiday === "cinco" ? html`<span class="fiesta" aria-hidden="true">${pinataSvg}${maracasSvg}</span>` : ""}
         <div class="hero">
-          <div class="moon${hot ? " hot" : ""}" style="background-image: url('${icon}')" role="img" aria-label="${name}">${holidayDecor(holiday)}${hot ? shadesSvg : ""}</div>
-          <div class="phase">${name}</div>
+          <div class="moon${shades ? " hot" : ""}" style="background-image: url('${icon}')" role="img" aria-label="${caption}">${holidayDecor(holiday)}${shades ? shadesSvg : ""}</div>
+          <div class="phase">${caption}</div>
           <div class="temp">${freezing ? html`<span class="icicles" aria-hidden="true">${icicleSvg}</span>` : ""}${shown}<span class="unit">${unit}</span></div>
         </div>
         <ul class="stats">
