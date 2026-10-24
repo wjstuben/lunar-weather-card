@@ -1,5 +1,7 @@
 # Lunar Weather Card
 
+![Lunar Weather Card](images/card.png)
+
 A Home Assistant card with the current moon phase, a few outdoor readings, and small drawings that show up when the weather or the calendar matches.
 
 **This card was designed and written by Grok in Cursor.** The person who published this repository asked for the card and is sharing it. They did not design it.
@@ -8,11 +10,11 @@ The forecast stays on Home Assistant's own forecast card. This card does not dra
 
 ## Install
 
-This repository is not in the HACS default store yet.
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=wjstuben&repository=lunar-weather-card&category=plugin)
 
-1. Copy `lunar-weather-card.js` to `config/www/`.
-2. In Settings, Dashboards, Resources, add `/local/lunar-weather-card.js` as a JavaScript module.
-3. Add the card to a dashboard.
+In HACS, add `wjstuben/lunar-weather-card` as a custom dashboard repository. A request to include it in the default store is separate and can take a while.
+
+You can also copy `lunar-weather-card.js` to `config/www/`, add `/local/lunar-weather-card.js` as a JavaScript module under Settings, Dashboards, Resources, and then add the card:
 
 ```yaml
 type: custom:lunar-weather-card
