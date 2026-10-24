@@ -305,7 +305,7 @@ function weatherGraphic(condition, night) {
       return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#ffd56a" stroke-width="3.2" stroke-linecap="round"/>`;
     })
     .join("");
-  const sun = `${rays}<circle cx="64" cy="58" r="32" fill="url(#sun)"/><circle cx="64" cy="58" r="31.4" fill="none" stroke="rgba(255,220,140,.9)" stroke-width="1.4"/>`;
+  const sun = `${rays}<circle cx="64" cy="58" r="32" fill="url(#sun)"/>`;
   const puff = (x, y, s) => `
     <g transform="translate(${x} ${y}) scale(${s})" opacity="0.96">
       <ellipse cx="0" cy="8" rx="22" ry="12" fill="url(#cloud)"/>
@@ -345,9 +345,11 @@ function weatherGraphic(condition, night) {
   if (!showSun && body === stars && key !== "clear-night") body += night ? puff(64, 58, 1.1) : sun;
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
     <defs>
-      <radialGradient id="sky" cx="50%" cy="46%" r="58%">
-        <stop offset="0%" stop-color="${sky0}"/>
-        <stop offset="72%" stop-color="${sky1}"/>
+      <radialGradient id="sky" cx="50%" cy="45%" r="78%">
+        <stop offset="0%" stop-color="${sky0}" stop-opacity="0.7"/>
+        <stop offset="18%" stop-color="${sky0}" stop-opacity="0.34"/>
+        <stop offset="40%" stop-color="${sky1}" stop-opacity="0.12"/>
+        <stop offset="68%" stop-color="${sky1}" stop-opacity="0.03"/>
         <stop offset="100%" stop-color="${sky1}" stop-opacity="0"/>
       </radialGradient>
       <radialGradient id="sun" cx="38%" cy="34%" r="70%">
@@ -360,7 +362,7 @@ function weatherGraphic(condition, night) {
         <stop offset="100%" stop-color="#c5d4f4"/>
       </linearGradient>
     </defs>
-    <circle cx="64" cy="58" r="54" fill="url(#sky)"/>
+    <rect width="128" height="128" fill="url(#sky)"/>
     ${body}
   </svg>`;
   return `data:image/svg+xml,${encodeURIComponent(svg)}`;
