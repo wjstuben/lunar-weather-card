@@ -1,5 +1,5 @@
 // Lunar Weather Card
-// Designed and written by Grok in Cursor. The publisher of this repository did not design it.
+// Designed by wjstuben and written by Ai in Cursor. The publisher of this repository did not design it.
 //
 // A moon-phase card for Home Assistant. Temperature, humidity, wind, rain,
 // and gust come from the weather entity, or from an outdoor station when
